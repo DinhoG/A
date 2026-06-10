@@ -1,309 +1,135 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compartilhar Arquivos e Chat (P2P)</title>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        :root {
-            --bg-color: #121214;
-            --card-bg: #1d1d22;
-            --primary: #8257e5;
-            --text: #e1e1e6;
-            --text-secondary: #a8a8b3;
-            --success: #00e676;
-        }
-
-        body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 500px;
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-            text-align: center;
-        }
-
-        h1 { margin-top: 0; color: #fff; font-size: 22px; }
-        p { color: var(--text-secondary); font-size: 14px; margin-top: -5px; }
-
-        .code-box {
-            background: rgba(130, 87, 229, 0.1);
-            border: 1px dashed var(--primary);
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-        }
-
-        .digit-code {
-            font-size: 32px;
-            font-weight: bold;
-            color: #fff;
-            letter-spacing: 5px;
-            display: block;
-            margin-top: 5px;
-        }
-
-        input[type="text"], input[type="file"] {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 6px;
-            border: 1px solid #323238;
-            background: #121214;
-            color: #fff;
-            box-sizing: border-box;
-            text-align: center;
-        }
-
-        #chat-input { text-align: left !important; }
-
-        button {
-            width: 100%;
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            padding: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        button:hover { background: #9466ff; }
-
-        #qrcode {
-            display: inline-block;
-            margin: 15px 0;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-        }
-
-        .hidden { display: none !important; }
-
-        .chat-box {
-            background: #121214;
-            border: 1px solid #323238;
-            border-radius: 6px;
-            height: 150px;
-            overflow-y: auto;
-            margin: 15px 0;
-            padding: 10px;
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .msg {
-            margin: 4px 0;
-            padding: 6px 10px;
-            border-radius: 6px;
-            max-width: 80%;
-            font-size: 14px;
-            word-break: break-all;
-        }
-
-        .msg.me { background: var(--primary); color: #fff; align-self: flex-end; }
-        .msg.other { background: #29292e; color: var(--text); align-self: flex-start; }
-
-        #status-progress {
-            margin: 10px 0;
-            color: var(--success);
-            font-weight: bold;
-            font-size: 14px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ArkShare</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#121212;color:#fff;margin:0;padding:20px}
+.card{max-width:700px;margin:auto;background:#1e1e1e;padding:20px;border-radius:12px}
+button,input{padding:10px;margin:5px;width:100%;box-sizing:border-box}
+#chat{height:220px;overflow:auto;border:1px solid #444;padding:10px}
+.msg{margin:4px 0;padding:6px;border-radius:6px;background:#333}
+.hidden{display:none}
+</style>
 </head>
 <body>
+<div class="card">
+<h1>ArkShare</h1>
 
-<div class="container">
-    <h1>Compartilhar P2P</h1>
-    <p>Arquivos e Mensagens de Texto</p>
+<div id="home">
+<button onclick="startTV()">Modo TV</button>
+<button onclick="startMobile()">Modo Celular</button>
+</div>
 
-    <div id="setup-zone">
-        <div class="code-box">
-            <span>Código de Acesso deste aparelho:</span>
-            <span class="digit-code" id="my-code">Gerando...</span>
-        </div>
+<div id="tv" class="hidden">
+<h2>TV</h2>
+<p>Código:</p>
+<h3 id="tvCode">...</h3>
+<div id="tvStatus">Inicializando...</div>
+<div id="chat"></div>
+</div>
 
-        <div id="qrcode-area">
-            <div id="qrcode"></div>
-        </div>
-
-        <hr style="border-color: #323238; margin: 20px 0;">
-
-        <div id="connect-form">
-            <input type="text" id="target-code" placeholder="Digite o código de 4 dígitos" maxlength="4">
-            <button onclick="connectByCode()">Conectar via Código</button>
-        </div>
-    </div>
-
-    <div id="share-zone" class="hidden">
-        <h3 style="color: var(--success); margin-bottom: 5px;">✓ Conectado com Sucesso!</h3>
-        <div id="status-progress"></div>
-
-        <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-            <input type="file" id="file-input">
-            <button onclick="sendFile()">Enviar Arquivo</button>
-        </div>
-
-        <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px;">
-            <h4 style="margin: 0; text-align: left;">Chat de Texto</h4>
-            <div class="chat-box" id="chat-box"></div>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="chat-input" placeholder="Digite uma mensagem..." onkeypress="if(event.key==='Enter') sendText()">
-                <button onclick="sendText()" style="width: auto; padding: 0 20px;">Enviar</button>
-            </div>
-        </div>
-    </div>
+<div id="mobile" class="hidden">
+<h2>Celular</h2>
+<input id="target" placeholder="Código da TV">
+<button onclick="connectTV()">Conectar</button>
+<div id="mobileArea" class="hidden">
+<input id="msg" placeholder="Mensagem">
+<button onclick="sendMsg()">Enviar Mensagem</button>
+<input type="file" id="file">
+<button onclick="sendFile()">Enviar Arquivo</button>
+</div>
+</div>
 </div>
 
 <script>
-    let peer = null;
-    let conn = null;
-    
-    // Gera um prefixo fixo para evitar colisão com outros usuários globais do PeerJS
-    // e anexa 4 números aleatórios fáceis de digitar
-    const prefixo = "dinho-";
-    const numeroAleatorio = Math.floor(1000 + Math.random() * 9000).toString();
-    const meuIdCompleto = prefixo + numeroAleatorio;
-    
-    // Exibe apenas os 4 números na tela para o usuário
-    document.getElementById('my-code').innerText = numeroAleatorio;
+let peer=null,conn=null;
 
-    // Inicializa o PeerJS usando o nosso próprio ID de 4 números mascarado
-    peer = new Peer(meuIdCompleto, {
-        host: '0.peerjs.com',
-        port: 443,
-        secure: true
-    });
+function addChat(txt){
+ let d=document.createElement("div");
+ d.className="msg";
+ d.textContent=txt;
+ document.getElementById("chat").appendChild(d);
+}
 
-    peer.on('open', (id) => {
-        console.log("Registrado com sucesso no servidor P2P seguro.");
-        
-        // Configuração do QR Code contendo o parâmetro do código correto
-        const currentUrl = window.location.href.split('?')[0];
-        const connectUrl = `${currentUrl}?code=${numeroAleatorio}`;
+function startTV(){
+ document.getElementById("home").classList.add("hidden");
+ document.getElementById("tv").classList.remove("hidden");
 
-        document.getElementById('qrcode').innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), {
-            text: connectUrl,
-            width: 140,
-            height: 140
-        });
+ const code="ARK"+Math.floor(Math.random()*90000+10000);
+ document.getElementById("tvCode").innerText=code;
 
-        // Verificação de conexão automática via QR Code
-        const urlParams = new URLSearchParams(window.location.search);
-        const codeFromUrl = urlParams.get('code');
-        if (codeFromUrl) {
-            document.getElementById('target-code').value = codeFromUrl;
-            setTimeout(() => { connectByCode(); }, 1000);
-        }
-    });
+ peer=new Peer("tv-"+code);
 
-    // Evento disparado no dispositivo que RECEBE a conexão (ex: a TV)
-    peer.on('connection', (connection) => {
-        conn = connection;
-        setupConnection();
-    });
+ peer.on("open",()=>{
+   document.getElementById("tvStatus").innerText="Aguardando conexão";
+ });
 
-    // Evento disparado no dispositivo que INICIA a conexão (ex: o celular digitando o código da TV)
-    function connectByCode() {
-        const targetCode = document.getElementById('target-code').value.trim();
-        if (targetCode.length !== 4) return alert('Insira um código válido de 4 dígitos.');
+ peer.on("connection",c=>{
+   conn=c;
+   document.getElementById("tvStatus").innerText="Conectado";
 
-        document.getElementById('status-progress').innerText = "Conectando ponto a ponto...";
-        
-        // Reconstrói o ID usando o prefixo padrão
-        const idDestinoCompleto = prefixo + targetCode;
+   conn.on("data",data=>{
+      if(data.type==="text"){
+        addChat("Celular: "+data.content);
+      }
+      if(data.type==="file"){
+        const a=document.createElement("a");
+        a.href=data.data;
+        a.download=data.name;
+        a.textContent="Baixar "+data.name;
+        document.getElementById("chat").appendChild(a);
+        document.getElementById("chat").appendChild(document.createElement("br"));
+      }
+   });
+ });
 
-        conn = peer.connect(idDestinoCompleto);
-        setupConnection();
-    }
+ peer.on("error",e=>alert("Erro: "+e.type));
+}
 
-    function setupConnection() {
-        conn.on('open', () => {
-            document.getElementById('setup-zone').classList.add('hidden');
-            document.getElementById('share-zone').classList.remove('hidden');
-            document.getElementById('status-progress').innerText = "";
-        });
+function startMobile(){
+ document.getElementById("home").classList.add("hidden");
+ document.getElementById("mobile").classList.remove("hidden");
+ peer=new Peer();
+}
 
-        conn.on('data', (data) => {
-            if (data.type === 'text') {
-                appendMessage(data.content, 'other');
-            } else if (data.type === 'file') {
-                document.getElementById('status-progress').innerText = "Arquivo recebido! Baixando...";
-                const blob = new Blob([data.file], { type: data.fileType });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = data.fileName;
-                link.click();
-                document.getElementById('status-progress').innerText = `Recebido: ${data.fileName}`;
-            }
-        });
+function connectTV(){
+ const code=document.getElementById("target").value.trim().toUpperCase();
+ conn=peer.connect("tv-"+code);
 
-        conn.on('close', () => { 
-            alert('A conexão foi encerrada pelo outro dispositivo.'); 
-            location.reload(); 
-        });
-    }
+ conn.on("open",()=>{
+   document.getElementById("mobileArea").classList.remove("hidden");
+   alert("Conectado");
+ });
 
-    function sendText() {
-        const input = document.getElementById('chat-input');
-        const text = input.value.trim();
-        if (!text || !conn) return;
+ conn.on("error",()=>alert("Falha na conexão"));
+}
 
-        conn.send({ type: 'text', content: text });
-        appendMessage(text, 'me');
-        input.value = '';
-    }
+function sendMsg(){
+ if(!conn||!conn.open)return;
+ const t=document.getElementById("msg").value;
+ conn.send({type:"text",content:t});
+ document.getElementById("msg").value="";
+}
 
-    function appendMessage(text, sender) {
-        const chatBox = document.getElementById('chat-box');
-        const msgDiv = document.createElement('div');
-        msgDiv.classList.add('msg', sender);
-        msgDiv.innerText = text;
-        chatBox.appendChild(msgDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
+function sendFile(){
+ if(!conn||!conn.open)return;
 
-    function sendFile() {
-        const fileInput = document.getElementById('file-input');
-        const file = fileInput.files[0];
-        if (!file || !conn) return alert('Selecione um arquivo primeiro.');
+ const f=document.getElementById("file").files[0];
+ if(!f)return;
 
-        document.getElementById('status-progress').innerText = "Enviando arquivo...";
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            conn.send({
-                type: 'file',
-                file: e.target.result,
-                fileName: file.name,
-                fileType: file.type
-            });
-            document.getElementById('status-progress').innerText = "Arquivo enviado com sucesso!";
-        };
-        reader.readAsArrayBuffer(file);
-    }
+ const r=new FileReader();
+ r.onload=e=>{
+   conn.send({
+      type:"file",
+      name:f.name,
+      data:e.target.result
+   });
+ };
+ r.readAsDataURL(f);
+}
 </script>
 </body>
 </html>
