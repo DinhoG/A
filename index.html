@@ -1,136 +1,326 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ArkShare</title>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<style>
-body{font-family:Arial,sans-serif;background:#121212;color:#fff;margin:0;padding:20px}
-.card{max-width:700px;margin:auto;background:#1e1e1e;padding:20px;border-radius:12px}
-button,input{padding:10px;margin:5px;width:100%;box-sizing:border-box}
-#chat{height:220px;overflow:auto;border:1px solid #444;padding:10px}
-.msg{margin:4px 0;padding:6px;border-radius:6px;background:#333}
-.hidden{display:none}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartPantry - Lista de Compras Inteligente</title>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --primary-light: #e8f5e9;
+            --accent: #d32f2f;
+            --bg: #f4f6f8;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --text-muted: #666666;
+            --border: #e0e0e0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        h1 { color: var(--primary); font-size: 1.6rem; }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .container { grid-template-columns: 2fr 1fr; }
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Formulário de Adicionar Item */
+        .item-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            padding: 10px 14px;
+            border: 1fr solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+        }
+
+        button.btn-add {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button.btn-add:hover {
+            background-color: #1b5e20;
+        }
+
+        /* Tabela de Itens */
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .item-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background-color: #fff;
+        }
+
+        .item-card.alert {
+            border-left: 5px solid var(--accent);
+            background-color: #fff8f8;
+        }
+
+        .item-info h4 { font-size: 1.05rem; }
+        .item-info p { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .badge-warning { background-color: #ffebee; color: var(--accent); }
+        .badge-ok { background-color: var(--primary-light); color: var(--primary); }
+
+        /* Aba de Ofertas/Encartes */
+        .offer-card {
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background-color: #fafafa;
+        }
+
+        .offer-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .store-name { font-size: 0.85rem; font-weight: bold; color: var(--text-muted); }
+        .price { font-weight: bold; color: var(--primary); font-size: 1.1rem; }
+        .savings { font-size: 0.8rem; color: var(--accent); font-weight: 500; }
+    </style>
 </head>
 <body>
-<div class="card">
-<h1>ArkShare</h1>
 
-<div id="home">
-<button onclick="startTV()">Modo TV</button>
-<button onclick="startMobile()">Modo Celular</button>
-</div>
+    <header>
+        <h1>SmartPantry 🛒</h1>
+        <span>Gestão & Promoções da Casa</span>
+    </header>
 
-<div id="tv" class="hidden">
-<h2>TV</h2>
-<p>Código:</p>
-<h3 id="tvCode">...</h3>
-<div id="tvStatus">Inicializando...</div>
-<div id="chat"></div>
-</div>
+    <div class="container">
+        <!-- Coluna Principal: Estoque e Consumo -->
+        <main>
+            <div class="card">
+                <h2 class="card-title">➕ Cadastrar Consumo de Item</h2>
+                <form class="item-form" id="addForm">
+                    <input type="text" id="itemName" placeholder="Ex: Arroz (5kg)" required>
+                    <input type="number" id="itemQty" placeholder="Qtd Atual" min="1" required>
+                    <input type="number" id="itemDays" placeholder="Dura quantos dias?" min="1" required>
+                    <button type="submit" class="btn-add">Adicionar</button>
+                </form>
+            </div>
 
-<div id="mobile" class="hidden">
-<h2>Celular</h2>
-<input id="target" placeholder="Código da TV">
-<button onclick="connectTV()">Conectar</button>
-<div id="mobileArea" class="hidden">
-<input id="msg" placeholder="Mensagem">
-<button onclick="sendMsg()">Enviar Mensagem</button>
-<input type="file" id="file">
-<button onclick="sendFile()">Enviar Arquivo</button>
-</div>
-</div>
-</div>
+            <div class="card">
+                <h2 class="card-title">📦 Meu Estoque</h2>
+                <div class="item-list" id="pantryList">
+                    <!-- Gerado via JavaScript -->
+                </div>
+            </div>
+        </main>
 
-<script>
-let peer=null,conn=null;
+        <!-- Coluna Lateral: Ofertas de Mercado -->
+        <aside>
+            <div class="card">
+                <h2 class="card-title">🏷️ Ofertas do Encarte</h2>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+                    Melhores preços encontrados para os itens que estão prestes a acabar na sua lista:
+                </p>
+                <div id="offersList">
+                    <!-- Gerado via JavaScript -->
+                </div>
+            </div>
+        </aside>
+    </div>
 
-function addChat(txt){
- let d=document.createElement("div");
- d.className="msg";
- d.textContent=txt;
- document.getElementById("chat").appendChild(d);
-}
+    <script>
+        // Dados Iniciais de Exemplo (Simulação)
+        let pantry = [
+            { id: 1, name: "Arroz Tio João 5kg", qty: 1, daysPerUnit: 15, lastPurchased: "2026-07-08" },
+            { id: 2, name: "Café Pilão 500g", qty: 2, daysPerUnit: 10, lastPurchased: "2026-07-01" },
+            { id: 3, name: "Leite Integral 1L", qty: 6, daysPerUnit: 3, lastPurchased: "2026-07-15" }
+        ];
 
-function startTV(){
- document.getElementById("home").classList.add("hidden");
- document.getElementById("tv").classList.remove("hidden");
+        // Promoções simuladas vindas dos mercados da região
+        const marketDeals = {
+            "Arroz Tio João 5kg": [
+                { store: "Mercado Mundial", price: 21.90, avgPrice: 26.00 },
+                { store: "Supermercado Guanabara", price: 23.50, avgPrice: 26.00 }
+            ],
+            "Café Pilão 500g": [
+                { store: "Carrefour", price: 14.90, avgPrice: 18.00 }
+            ]
+        };
 
- const code="ARK"+Math.floor(Math.random()*90000+10000);
- document.getElementById("tvCode").innerText=code;
+        // Função para calcular os dias restantes
+        function calculateRemainingDays(item) {
+            const lastDate = new Date(item.lastPurchased);
+            const today = new Date();
+            const diffTime = Math.abs(today - lastDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            const totalDaysSupply = item.qty * item.daysPerUnit;
+            const daysLeft = totalDaysSupply - diffDays;
+            
+            return daysLeft > 0 ? daysLeft : 0;
+        }
 
- peer=new Peer("tv-"+code);
+        // Renderizar a Lista do Estoque
+        function renderPantry() {
+            const pantryList = document.getElementById('pantryList');
+            const offersList = document.getElementById('offersList');
+            
+            pantryList.innerHTML = '';
+            offersList.innerHTML = '';
 
- peer.on("open",()=>{
-   document.getElementById("tvStatus").innerText="Aguardando conexão";
- });
+            let needsReorder = [];
 
- peer.on("connection",c=>{
-   conn=c;
-   document.getElementById("tvStatus").innerText="Conectado";
+            pantry.forEach(item => {
+                const daysLeft = calculateRemainingDays(item);
+                const isAlert = daysLeft <= 3; // Alerta se restarem 3 dias ou menos
 
-   conn.on("data",data=>{
-      if(data.type==="text"){
-        addChat("Celular: "+data.content);
-      }
-      if(data.type==="file"){
-        const a=document.createElement("a");
-        a.href=data.data;
-        a.download=data.name;
-        a.textContent="Baixar "+data.name;
-        document.getElementById("chat").appendChild(a);
-        document.getElementById("chat").appendChild(document.createElement("br"));
-      }
-   });
- });
+                if (isAlert) {
+                    needsReorder.push(item.name);
+                }
 
- peer.on("error",e=>alert("Erro: "+e.type));
-}
+                const itemHTML = `
+                    <div class="item-card ${isAlert ? 'alert' : ''}">
+                        <div class="item-info">
+                            <h4>${item.name}</h4>
+                            <p>Qtd: ${item.qty} un | Consumo: 1 un a cada ${item.daysPerUnit} dias</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="badge ${isAlert ? 'badge-warning' : 'badge-ok'}">
+                                ${isAlert ? '⚠️ Comprar urgente' : '✅ Estoque OK'}
+                            </span>
+                            <p style="font-size: 0.85rem; margin-top: 4px; font-weight: 500;">
+                                Restam: ~${daysLeft} dias
+                            </p>
+                        </div>
+                    </div>
+                `;
+                pantryList.innerHTML += itemHTML;
+            });
 
-function startMobile(){
- document.getElementById("home").classList.add("hidden");
- document.getElementById("mobile").classList.remove("hidden");
- peer=new Peer();
-}
+            // Renderizar Encartes/Ofertas apenas para os itens que precisam de compra
+            needsReorder.forEach(itemName => {
+                const deals = marketDeals[itemName];
+                if (deals && deals.length > 0) {
+                    deals.forEach(deal => {
+                        const savings = (deal.avgPrice - deal.price).toFixed(2);
+                        const offerHTML = `
+                            <div class="offer-card">
+                                <div class="offer-header">
+                                    <span class="store-name">${deal.store}</span>
+                                    <span class="price">R$ ${deal.price.toFixed(2)}</span>
+                                </div>
+                                <div><strong>${itemName}</strong></div>
+                                <div class="savings">Economia de R$ ${savings} comparado à média</div>
+                            </div>
+                        `;
+                        offersList.innerHTML += offerHTML;
+                    });
+                }
+            });
 
-function connectTV(){
- const code=document.getElementById("target").value.trim().toUpperCase();
- conn=peer.connect("tv-"+code);
+            if (offersList.innerHTML === '') {
+                offersList.innerHTML = `<p style="font-size:0.85rem; color:var(--text-muted);">Nenhum item em alerta necessitando de ofertas no momento.</p>`;
+            }
+        }
 
- conn.on("open",()=>{
-   document.getElementById("mobileArea").classList.remove("hidden");
-   alert("Conectado");
- });
+        // Adicionar novo item
+        document.getElementById('addForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('itemName').value;
+            const qty = parseInt(document.getElementById('itemQty').value);
+            const days = parseInt(document.getElementById('itemDays').value);
 
- conn.on("error",()=>alert("Falha na conexão"));
-}
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                qty: qty,
+                daysPerUnit: days,
+                lastPurchased: new Date().toISOString().split('T')[0]
+            };
 
-function sendMsg(){
- if(!conn||!conn.open)return;
- const t=document.getElementById("msg").value;
- conn.send({type:"text",content:t});
- document.getElementById("msg").value="";
-}
+            pantry.push(newItem);
+            renderPantry();
 
-function sendFile(){
- if(!conn||!conn.open)return;
+            // Limpar formulário
+            this.reset();
+        });
 
- const f=document.getElementById("file").files[0];
- if(!f)return;
-
- const r=new FileReader();
- r.onload=e=>{
-   conn.send({
-      type:"file",
-      name:f.name,
-      data:e.target.result
-   });
- };
- r.readAsDataURL(f);
-}
-</script>
+        // Inicializar aplicação
+        renderPantry();
+    </script>
 </body>
 </html>
-
