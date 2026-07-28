@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartPantry - Lista de Compras Inteligente</title>
+    <!-- SDK Oficial do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #2e7d32;
@@ -16,78 +18,37 @@
             --border: #e0e0e0;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 20px; max-width: 1100px; margin: 0 auto; }
+        
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; background: var(--card-bg); padding: 20px; border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
-        h1 { color: var(--primary); font-size: 1.6rem; }
+        h1 { color: var(--primary); font-size: 1.5rem; }
 
-        .container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
+        .container { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) { .container { grid-template-columns: 2fr 1fr; } }
 
-        @media (min-width: 768px) {
-            .container { grid-template-columns: 2fr 1fr; }
-        }
-
-        .card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-        }
-
-        .card-title {
-            font-size: 1.2rem;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card-title { font-size: 1.1rem; margin-bottom: 16px; font-weight: bold; }
 
         /* Formulário de Adicionar Item */
         .item-form {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
             gap: 10px;
             margin-bottom: 20px;
         }
 
-        input, select, button {
-            padding: 10px 14px;
-            border: 1fr solid var(--border);
+        input, button {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
             border-radius: 8px;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             outline: none;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--primary);
         }
 
         button.btn-add {
@@ -96,83 +57,41 @@
             border: none;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
         }
 
-        button.btn-add:hover {
-            background-color: #1b5e20;
-        }
-
-        /* Tabela de Itens */
-        .item-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
+        /* Tabela/Cards de Itens */
         .item-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background-color: #fff;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px;
         }
+        .item-card.alert { border-left: 5px solid var(--accent); background-color: #fff8f8; }
 
-        .item-card.alert {
-            border-left: 5px solid var(--accent);
-            background-color: #fff8f8;
-        }
-
-        .item-info h4 { font-size: 1.05rem; }
-        .item-info p { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
-
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-
-        .badge-warning { background-color: #ffebee; color: var(--accent); }
-        .badge-ok { background-color: var(--primary-light); color: var(--primary); }
-
-        /* Aba de Ofertas/Encartes */
+        /* Ofertas */
         .offer-card {
-            border: 1px solid var(--border);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            background-color: #fafafa;
+            border: 1px solid var(--border); padding: 12px; border-radius: 8px;
+            margin-bottom: 12px; background-color: #fafafa;
         }
-
-        .offer-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 6px;
-        }
-
+        .offer-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
         .store-name { font-size: 0.85rem; font-weight: bold; color: var(--text-muted); }
         .price { font-weight: bold; color: var(--primary); font-size: 1.1rem; }
-        .savings { font-size: 0.8rem; color: var(--accent); font-weight: 500; }
+        .savings { font-size: 0.8rem; color: var(--accent); font-weight: 500; margin-top: 4px; }
+        .status-tag { font-size: 0.75rem; color: #1565c0; font-weight: bold; margin-bottom: 8px; display: block; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>SmartPantry 🛒</h1>
-        <span>Gestão & Promoções da Casa</span>
+        <span id="db-status">🌐 Conectando ao Banco...</span>
     </header>
 
     <div class="container">
-        <!-- Coluna Principal: Estoque e Consumo -->
+        <!-- Coluna Esquerda: Cadastro e Lista de Estoque -->
         <main>
             <div class="card">
-                <h2 class="card-title">➕ Cadastrar Consumo de Item</h2>
+                <h2 class="card-title">➕ Cadastrar Item no Estoque</h2>
                 <form class="item-form" id="addForm">
-                    <input type="text" id="itemName" placeholder="Ex: Arroz (5kg)" required>
+                    <input type="text" id="itemName" placeholder="Ex: Arroz Tio João 5kg" required>
                     <input type="number" id="itemQty" placeholder="Qtd Atual" min="1" required>
                     <input type="number" id="itemDays" placeholder="Dura quantos dias?" min="1" required>
                     <button type="submit" class="btn-add">Adicionar</button>
@@ -180,147 +99,115 @@
             </div>
 
             <div class="card">
-                <h2 class="card-title">📦 Meu Estoque</h2>
-                <div class="item-list" id="pantryList">
-                    <!-- Gerado via JavaScript -->
+                <h2 class="card-title">📦 Meu Estoque Doméstico</h2>
+                <div id="pantryList">
+                    <!-- Itens aparecem aqui via JS -->
                 </div>
             </div>
         </main>
 
-        <!-- Coluna Lateral: Ofertas de Mercado -->
+        <!-- Coluna Direita: Encarte do Banco Supabase -->
         <aside>
             <div class="card">
-                <h2 class="card-title">🏷️ Ofertas do Encarte</h2>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
-                    Melhores preços encontrados para os itens que estão prestes a acabar na sua lista:
-                </p>
-                <div id="offersList">
-                    <!-- Gerado via JavaScript -->
-                </div>
+                <h2 class="card-title">🏷️ Ofertas do Encarte Hoje</h2>
+                <span class="status-tag">🔄 Atualizado direto da base de dados</span>
+                <div id="offersList">Carregando ofertas...</div>
             </div>
         </aside>
     </div>
 
     <script>
-        // Dados Iniciais de Exemplo (Simulação)
+        // =============================================================
+        // 🔑 COLE SUAS CHAVES DO SUPABASE AQUI DENTRO DAS ASPAS SIMPLES:
+        // =============================================================
+        const SUPABASE_URL = 'https://uieivwndolygefxrdvow.supabase.co/rest/v1/; 
+        const SUPABASE_KEY = 'sb_publishable_qjmfpBsObQazixM8cVds5A_lHrivH7Y; 
+
+        // Conecta ao Supabase
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Dados de estoque locais (Simulação)
         let pantry = [
-            { id: 1, name: "Arroz Tio João 5kg", qty: 1, daysPerUnit: 15, lastPurchased: "2026-07-08" },
-            { id: 2, name: "Café Pilão 500g", qty: 2, daysPerUnit: 10, lastPurchased: "2026-07-01" },
-            { id: 3, name: "Leite Integral 1L", qty: 6, daysPerUnit: 3, lastPurchased: "2026-07-15" }
+            { id: 1, name: "Arroz Tio João 5kg", qty: 1, daysPerUnit: 15, lastPurchased: "2026-07-20" },
+            { id: 2, name: "Café Pilão 500g", qty: 1, daysPerUnit: 10, lastPurchased: "2026-07-25" }
         ];
 
-        // Promoções simuladas vindas dos mercados da região
-        const marketDeals = {
-            "Arroz Tio João 5kg": [
-                { store: "Mercado Mundial", price: 21.90, avgPrice: 26.00 },
-                { store: "Supermercado Guanabara", price: 23.50, avgPrice: 26.00 }
-            ],
-            "Café Pilão 500g": [
-                { store: "Carrefour", price: 14.90, avgPrice: 18.00 }
-            ]
-        };
-
-        // Função para calcular os dias restantes
-        function calculateRemainingDays(item) {
-            const lastDate = new Date(item.lastPurchased);
-            const today = new Date();
-            const diffTime = Math.abs(today - lastDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            const totalDaysSupply = item.qty * item.daysPerUnit;
-            const daysLeft = totalDaysSupply - diffDays;
-            
-            return daysLeft > 0 ? daysLeft : 0;
-        }
-
-        // Renderizar a Lista do Estoque
-        function renderPantry() {
-            const pantryList = document.getElementById('pantryList');
+        // Buscar Ofertas no Supabase
+        async function carregarPrecosDoDia() {
             const offersList = document.getElementById('offersList');
-            
-            pantryList.innerHTML = '';
-            offersList.innerHTML = '';
+            const dbStatus = document.getElementById('db-status');
 
-            let needsReorder = [];
+            try {
+                // Busca na tabela 'promocoes' que criamos
+                const { data: promocoes, error } = await db.from('promocoes').select('*');
 
-            pantry.forEach(item => {
-                const daysLeft = calculateRemainingDays(item);
-                const isAlert = daysLeft <= 3; // Alerta se restarem 3 dias ou menos
+                if (error) throw error;
 
-                if (isAlert) {
-                    needsReorder.push(item.name);
+                dbStatus.innerText = "🟢 Conectado à Base de Preços";
+                offersList.innerHTML = '';
+
+                if (!promocoes || promocoes.length === 0) {
+                    offersList.innerHTML = '<p style="font-size:0.85rem; color:var(--text-muted);">Nenhuma promoção cadastrada no momento.</p>';
+                    return;
                 }
 
+                promocoes.forEach(item => {
+                    const economia = (item.preco_medio - item.preco).toFixed(2);
+                    const offerHTML = `
+                        <div class="offer-card">
+                            <div class="offer-header">
+                                <span class="store-name">${item.mercado}</span>
+                                <span class="price">R$ ${Number(item.preco).toFixed(2)}</span>
+                            </div>
+                            <div><strong>${item.produto}</strong></div>
+                            <div class="savings">Economia de R$ ${economia} em relação à média</div>
+                        </div>
+                    `;
+                    offersList.innerHTML += offerHTML;
+                });
+
+            } catch (err) {
+                console.error("Erro ao carregar ofertas:", err);
+                dbStatus.innerText = "🔴 Erro na conexão";
+                offersList.innerHTML = '<p style="color:red; font-size:0.85rem;">Verifique se colocou as chaves do Supabase corretamente no arquivo.</p>';
+            }
+        }
+
+        // Renderizar a Lista de Compras do usuário
+        function renderPantry() {
+            const pantryList = document.getElementById('pantryList');
+            pantryList.innerHTML = '';
+
+            pantry.forEach(item => {
                 const itemHTML = `
-                    <div class="item-card ${isAlert ? 'alert' : ''}">
-                        <div class="item-info">
-                            <h4>${item.name}</h4>
-                            <p>Qtd: ${item.qty} un | Consumo: 1 un a cada ${item.daysPerUnit} dias</p>
+                    <div class="item-card alert">
+                        <div>
+                            <strong>${item.name}</strong>
+                            <p style="font-size:0.8rem; color:var(--text-muted);">Estoque: ${item.qty} un (Consumo: 1 un / ${item.daysPerUnit} dias)</p>
                         </div>
-                        <div style="text-align: right;">
-                            <span class="badge ${isAlert ? 'badge-warning' : 'badge-ok'}">
-                                ${isAlert ? '⚠️ Comprar urgente' : '✅ Estoque OK'}
-                            </span>
-                            <p style="font-size: 0.85rem; margin-top: 4px; font-weight: 500;">
-                                Restam: ~${daysLeft} dias
-                            </p>
-                        </div>
+                        <span style="font-size:0.8rem; font-weight:bold; color:var(--accent);">⚠️ Repor em breve</span>
                     </div>
                 `;
                 pantryList.innerHTML += itemHTML;
             });
-
-            // Renderizar Encartes/Ofertas apenas para os itens que precisam de compra
-            needsReorder.forEach(itemName => {
-                const deals = marketDeals[itemName];
-                if (deals && deals.length > 0) {
-                    deals.forEach(deal => {
-                        const savings = (deal.avgPrice - deal.price).toFixed(2);
-                        const offerHTML = `
-                            <div class="offer-card">
-                                <div class="offer-header">
-                                    <span class="store-name">${deal.store}</span>
-                                    <span class="price">R$ ${deal.price.toFixed(2)}</span>
-                                </div>
-                                <div><strong>${itemName}</strong></div>
-                                <div class="savings">Economia de R$ ${savings} comparado à média</div>
-                            </div>
-                        `;
-                        offersList.innerHTML += offerHTML;
-                    });
-                }
-            });
-
-            if (offersList.innerHTML === '') {
-                offersList.innerHTML = `<p style="font-size:0.85rem; color:var(--text-muted);">Nenhum item em alerta necessitando de ofertas no momento.</p>`;
-            }
         }
 
-        // Adicionar novo item
+        // Form para adicionar novos produtos na lista do usuário
         document.getElementById('addForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const name = document.getElementById('itemName').value;
             const qty = parseInt(document.getElementById('itemQty').value);
             const days = parseInt(document.getElementById('itemDays').value);
 
-            const newItem = {
-                id: Date.now(),
-                name: name,
-                qty: qty,
-                daysPerUnit: days,
-                lastPurchased: new Date().toISOString().split('T')[0]
-            };
-
-            pantry.push(newItem);
+            pantry.push({ id: Date.now(), name: name, qty: qty, daysPerUnit: days, lastPurchased: new Date().toISOString().split('T')[0] });
             renderPantry();
-
-            // Limpar formulário
             this.reset();
         });
 
-        // Inicializar aplicação
+        // Inicializar
         renderPantry();
+        carregarPrecosDoDia();
     </script>
 </body>
 </html>
+
