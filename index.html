@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <!-- Adicione esta linha dentro da tag <head> do seu index.html -->
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartPantry - Lista de Compras Inteligente</title>
     <!-- SDK Oficial do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Ferramenta de inspeção para celular -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
     <style>
         :root {
             --primary: #2e7d32;
@@ -39,7 +38,6 @@
         .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .card-title { font-size: 1.1rem; margin-bottom: 16px; font-weight: bold; }
 
-        /* Formulário de Adicionar Item */
         .item-form {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -63,14 +61,12 @@
             cursor: pointer;
         }
 
-        /* Tabela/Cards de Itens */
         .item-card {
             display: flex; justify-content: space-between; align-items: center;
             padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px;
         }
         .item-card.alert { border-left: 5px solid var(--accent); background-color: #fff8f8; }
 
-        /* Ofertas */
         .offer-card {
             border: 1px solid var(--border); padding: 12px; border-radius: 8px;
             margin-bottom: 12px; background-color: #fafafa;
@@ -90,7 +86,6 @@
     </header>
 
     <div class="container">
-        <!-- Coluna Esquerda: Cadastro e Lista de Estoque -->
         <main>
             <div class="card">
                 <h2 class="card-title">➕ Cadastrar Item no Estoque</h2>
@@ -104,13 +99,10 @@
 
             <div class="card">
                 <h2 class="card-title">📦 Meu Estoque Doméstico</h2>
-                <div id="pantryList">
-                    <!-- Itens aparecem aqui via JS -->
-                </div>
+                <div id="pantryList"></div>
             </div>
         </main>
 
-        <!-- Coluna Direita: Encarte do Banco Supabase -->
         <aside>
             <div class="card">
                 <h2 class="card-title">🏷️ Ofertas do Encarte Hoje</h2>
@@ -121,28 +113,34 @@
     </div>
 
     <script>
-        // =============================================================
-        // 🔑 COLE SUAS CHAVES DO SUPABASE AQUI DENTRO DAS ASPAS SIMPLES:
-        // =============================================================
-        const SUPABASE_URL = 'https://uieivwndolygefxrdvow.supabase.co; 
-        const SUPABASE_KEY = 'sb_publishable_qjmfpBsObQazixM8cVds5A_lHrivH7Y; 
+        // Configurações do Supabase
+        const SUPABASE_URL = 'https://uieivwndolygefxrdvow.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_qjmfpBsObQazixM8cVds5A_lHrivH7Y';
 
-        // Conecta ao Supabase
-        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let db = null;
 
-        // Dados de estoque locais (Simulação)
+        try {
+            db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (e) {
+            console.error("Erro ao inicializar Supabase:", e);
+        }
+
         let pantry = [
             { id: 1, name: "Arroz Tio João 5kg", qty: 1, daysPerUnit: 15, lastPurchased: "2026-07-20" },
             { id: 2, name: "Café Pilão 500g", qty: 1, daysPerUnit: 10, lastPurchased: "2026-07-25" }
         ];
 
-        // Buscar Ofertas no Supabase
         async function carregarPrecosDoDia() {
             const offersList = document.getElementById('offersList');
             const dbStatus = document.getElementById('db-status');
 
+            if (!db) {
+                dbStatus.innerText = "🔴 Chave do Banco Inválida";
+                offersList.innerHTML = '<p style="color:red;">Verifique se a chave do Supabase foi colada corretamente.</p>';
+                return;
+            }
+
             try {
-                // Busca na tabela 'promocoes' que criamos
                 const { data: promocoes, error } = await db.from('promocoes').select('*');
 
                 if (error) throw error;
@@ -151,19 +149,22 @@
                 offersList.innerHTML = '';
 
                 if (!promocoes || promocoes.length === 0) {
-                    offersList.innerHTML = '<p style="font-size:0.85rem; color:var(--text-muted);">Nenhuma promoção cadastrada no momento.</p>';
+                    offersList.innerHTML = '<p style="font-size:0.85rem; color:var(--text-muted);">Nenhuma promoção encontrada no banco.</p>';
                     return;
                 }
 
                 promocoes.forEach(item => {
-                    const economia = (item.preco_medio - item.preco).toFixed(2);
+                    const preco = Number(item.preco) || 0;
+                    const precoMedio = Number(item.preco_medio) || 0;
+                    const economia = (precoMedio - preco).toFixed(2);
+
                     const offerHTML = `
                         <div class="offer-card">
                             <div class="offer-header">
-                                <span class="store-name">${item.mercado}</span>
-                                <span class="price">R$ ${Number(item.preco).toFixed(2)}</span>
+                                <span class="store-name">${item.mercado || 'Mercado'}</span>
+                                <span class="price">R$ ${preco.toFixed(2)}</span>
                             </div>
-                            <div><strong>${item.produto}</strong></div>
+                            <div><strong>${item.produto || 'Produto'}</strong></div>
                             <div class="savings">Economia de R$ ${economia} em relação à média</div>
                         </div>
                     `;
@@ -172,12 +173,11 @@
 
             } catch (err) {
                 console.error("Erro ao carregar ofertas:", err);
-                dbStatus.innerText = "🔴 Erro na conexão";
-                offersList.innerHTML = '<p style="color:red; font-size:0.85rem;">Verifique se colocou as chaves do Supabase corretamente no arquivo.</p>';
+                dbStatus.innerText = "🔴 Erro de Busca";
+                offersList.innerHTML = `<p style="color:red; font-size:0.8rem;"><b>Erro:</b> ${err.message || err}</p>`;
             }
         }
 
-        // Renderizar a Lista de Compras do usuário
         function renderPantry() {
             const pantryList = document.getElementById('pantryList');
             pantryList.innerHTML = '';
@@ -196,7 +196,6 @@
             });
         }
 
-        // Form para adicionar novos produtos na lista do usuário
         document.getElementById('addForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const name = document.getElementById('itemName').value;
@@ -208,7 +207,6 @@
             this.reset();
         });
 
-        // Inicializar
         renderPantry();
         carregarPrecosDoDia();
     </script>
